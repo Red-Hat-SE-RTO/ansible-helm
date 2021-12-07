@@ -1,0 +1,7 @@
+---
+git_repo: https://github.com/openshift-helm-charts/charts
+context_dir: charts/redhat/redhat/jenkins/0.0.3/src
+work_dir: /tmp
+project_name: jenkins-helm
+
+

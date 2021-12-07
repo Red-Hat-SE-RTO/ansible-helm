@@ -1,0 +1,43 @@
+---
+- name: Ensure you have the latest version of the Helm Charts
+  git:
+    repo: "{{ git_repo }}"
+    dest: "{{ work_dir }}/checkout"
+
+- name: Update the values for the deployment
+  template:
+    src: local-values.yaml
+    dest: "{{ work_dir }}/local-values.yaml"
+
+- name: Create the target Project
+  k8s:
+    name: "{{ project_name }}"
+    api_version: project.openshift.io/v1
+    kind: Project
+    state: present
+
+# This task works with the latest version of the Helm module
+#- name: Deploy Helm Chart from git
+#  helm:
+#    name: "jenkins"
+#    chart_ref: "{{ work_dir }}/checkout/{{ context_dir }}"
+#    release_namespace: "{{ project_name }}"
+#    values_files:
+#      - "{{ work_dir }}/checkout/{{ context_dir }}/local-values.yaml"
+
+# These three tasks are a workaround
+- name: Generate K8S Config from Helm Chart
+  command:
+    cmd: "helm template -f {{ work_dir }}/local-values.yaml {{ work_dir }}/checkout/{{ context_dir }}"
+  register: k8s_config
+
+- name: Copy K8S Config to a File
+  copy:
+    content: "{{ k8s_config.stdout }}"
+    dest: "{{ work_dir }}/config.yaml"
+
+- name: Apply K8S Config
+  k8s:
+    state: present
+    namespace: "{{ project_name }}"
+    src: "{{ work_dir }}/config.yaml"
